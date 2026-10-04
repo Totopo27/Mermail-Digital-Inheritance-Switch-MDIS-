@@ -112,7 +112,7 @@ function printHeader() {
 // -----------------------------------------------------------------------------
 async function runScenario1_Liveness() {
   console.log("\n-------------------------------------------------------------------------------");
-  console.log("📡 ESCENARIO 1: Verificación On-Chain en Solana Devnet y Auditoría de Buzón");
+  console.log("📡 SCENARIO 1: On-Chain Solana Liveness Sensor & Agent Mailbox Audit");
   console.log("-------------------------------------------------------------------------------");
 
   const connection = new Connection(process.env.SOLANA_RPC_URL || clusterApiUrl("devnet"), "confirmed");
@@ -125,16 +125,16 @@ async function runScenario1_Liveness() {
     guardianEmails: [GUARDIAN_EMAIL]
   });
 
-  console.log(`\n1. Consultando actividad pasiva on-chain para la wallet ${OWNER_WALLET}...`);
+  console.log(`\n1. Querying passive on-chain Solana activity for wallet ${OWNER_WALLET}...`);
   const liveness = await engine.auditOnChainLiveness(connection);
   console.log(`   --> ${liveness.message}`);
   if (liveness.lastTxSignature) {
-    console.log(`   --> Firma detectada: ${liveness.lastTxSignature}`);
-    console.log(`   --> Antigüedad: ${liveness.daysSinceTx} días transcurridos.`);
-    console.log(`   ✅ Estado del Switch: [${engine.state.status}] (Zero-Effort: Timer reseteado automáticamente).`);
+    console.log(`   --> Verified Transaction Signature: ${liveness.lastTxSignature}`);
+    console.log(`   --> Age: ${liveness.daysSinceTx} days elapsed.`);
+    console.log(`   ✅ Switch State: [${engine.state.status}] (Zero-Effort: Timer auto-refreshed via Solana RPC).`);
   }
 
-  console.log(`\n2. Auditando buzón del Custodio en Mermail (list_emails)...`);
+  console.log(`\n2. Auditing Agent-Custody-Test mailbox via Mermail MCP (list_emails)...`);
   try {
     const listRes = await callMcp(CUSTODIAN_KEY, "list_emails", {
       mailboxId: CUSTODIAN_MAILBOX_ID,
@@ -147,14 +147,14 @@ async function runScenario1_Liveness() {
       const parsed = JSON.parse(listRes.result.content[0].text);
       emails = parsed.emails || [];
     }
-    console.log(`   --> ${emails.length} correos recientes analizados en el buzón ${CUSTODIAN_EMAIL}.`);
-    console.log(`   ✅ Protocolo en vigilancia activa (ARMED).`);
+    console.log(`   --> ${emails.length} recent messages analyzed in Agent-Custody mailbox (${CUSTODIAN_EMAIL}).`);
+    console.log(`   ✅ Notary Agent operating in active vigilance mode (ARMED).`);
   } catch (err) {
-    console.warn(`   ⚠️ Advertencia consultando buzón Mermail: ${err.message}`);
+    console.warn(`   ⚠️ Agent mailbox audit warning: ${err.message}`);
   }
 
   // 3. Simulación de Advertencia Preventiva de Gracia al Titular (Owner-test)
-  console.log(`\n3. Despachando Advertencia Preventiva de Período de Gracia a Owner-test (${OWNER_EMAIL})...`);
+  console.log(`\n3. Dispatching Grace Period Warning from Agent-Custody to Owner-test (${OWNER_EMAIL})...`);
   try {
     const warning = NotaryAgentAdvisor.generateGracePeriodWarning({
       ownerName: "Owner-test (Gustavo)",
@@ -172,10 +172,10 @@ async function runScenario1_Liveness() {
         text: warning.bodyText
       }
     });
-    console.log(`   ✅ Advertencia de gracia despachada con éxito a ${OWNER_EMAIL}`);
-    console.log(`   📱 [TELEGRAM MOBILE PUSH]: Owner-test recibe la advertencia en su teléfono móvil.`);
+    console.log(`   ✅ Grace warning dispatched from Agent-Custody (${CUSTODIAN_EMAIL}) to ${OWNER_EMAIL}`);
+    console.log(`   📱 [TELEGRAM MOBILE PUSH]: Owner-test receives the push notification.`);
   } catch (err) {
-    console.warn(`   ⚠️ Nota de envío a Owner-test: ${err.message}`);
+    console.warn(`   ⚠️ Warning dispatch notice: ${err.message}`);
   }
 }
 
@@ -252,35 +252,35 @@ async function runScenario2_DefenseAndSemanticHold() {
 }
 
 // -----------------------------------------------------------------------------
-// ESCENARIO 3: MUERTE CONFIRMADA / ORACLE BYPASS & LIBERACIÓN EN VIVO MERMAIL
+// SCENARIO 3: CONFIRMED DEATH (ORACLE BYPASS) & REAL SHARD #2 RELEASE VIA MERMAIL
 // -----------------------------------------------------------------------------
 async function runScenario3_ConfirmedDeathAndRelease() {
   console.log("\n-------------------------------------------------------------------------------");
-  console.log("⚖️  ESCENARIO 3: Muerte Confirmada (Oracle Bypass) & Liberación de Shard #2");
+  console.log("⚖️  SCENARIO 3: Confirmed Contingency (Oracle Bypass) & Shamir Shard #2 Release");
   console.log("-------------------------------------------------------------------------------");
 
   const masterSeed = "orange lemon victory solar quantum rocket nebula galaxy";
-  console.log(`\n1. Clave Maestra Protegida bajo Esquema de Shamir en GF(2^8) (2-de-3):`);
+  console.log(`\n1. Master Seed Protected Under Shamir Scheme in GF(2^8) (2-of-3 Threshold):`);
   console.log(`   "${masterSeed}"`);
 
   const [shardBeneficiary, shardAgent, shardGuardian] = splitSecret(masterSeed, 3, 2);
-  console.log(`   - Shard #1 (Offline en poder del Heredero): ID=${shardBeneficiary.id} [${shardBeneficiary.data.slice(0, 24)}...]`);
-  console.log(`   - Shard #2 (Custodiado por Agente Mermail): ID=${shardAgent.id} [${shardAgent.data.slice(0, 24)}...]`);
-  console.log(`   - Shard #3 (Custodiado por Notario/Guardián): ID=${shardGuardian.id} [${shardGuardian.data.slice(0, 24)}...]`);
+  console.log(`   - Shard #1 (Kept Offline by Heir-test):       ID=${shardBeneficiary.id} [${shardBeneficiary.data.slice(0, 24)}...]`);
+  console.log(`   - Shard #2 (Custodied by Agent-Custody-Test): ID=${shardAgent.id} [${shardAgent.data.slice(0, 24)}...]`);
+  console.log(`   - Shard #3 (Custodied by GUARDIAN Trustee):   ID=${shardGuardian.id} [${shardGuardian.data.slice(0, 24)}...]`);
 
-  console.log(`\n2. Presentación de Certificado Legal de Defunción (Registro Civil / Notaría):`);
+  console.log(`\n2. Legal Death Certificate Attestation (Civil Registry / Official Notary):`);
   const deathCertificateDoc = {
     deceased: OWNER_WALLET,
     dateOfDeath: new Date().toISOString(),
     registryNumber: "ACTA-DEF-2026-X99",
-    issuer: "Registro Civil Central / Notaría Oficial"
+    issuer: "Central Civil Registry / Official Legal Oracle"
   };
   const certificateHash = crypto.createHash("sha256").update(JSON.stringify(deathCertificateDoc)).digest("hex");
-  console.log(`   - Certificado: Acta N° ${deathCertificateDoc.registryNumber}`);
-  console.log(`   - Hash Criptográfico SHA-256 On-Chain: ${certificateHash}`);
-  console.log(`   - Estado del protocolo: [TRIGGERED] (Muerte confirmada sin disputa).`);
+  console.log(`   - Attested Certificate: Record No. ${deathCertificateDoc.registryNumber}`);
+  console.log(`   - Cryptographic SHA-256 On-Chain Hash: ${certificateHash}`);
+  console.log(`   - Protocol State Transition: [TRIGGERED] (Confirmed death verified without dispute).`);
 
-  console.log(`\n3. Despachando Directiva Notarial y Shard #2 a Heir-test vía Mermail MCP...`);
+  console.log(`\n3. Dispatching Notarial Directive & Shard #2 from Agent-Custody to Heir-test...`);
   const guidance = NotaryAgentAdvisor.generateBeneficiaryGuidance({
     ownerName: "Owner-test (Gustavo)",
     beneficiaryEmail: BENEFICIARY_EMAIL,
@@ -310,15 +310,15 @@ NOTARIAL EXECUTION RECEIPT (SOLANA DEVNET & SHAMIR)
         text: emailText
       }
     });
-    console.log(`   ✅ Correo de contingencia despachado con éxito a ${BENEFICIARY_EMAIL}`);
-    console.log(`   📬 [TELEGRAM PUSH]: Mermail entrega notificación instantánea al beneficiario.`);
-    console.log(`   👉 VERIFICÁ AHORA EN VIVO: Entrá a https://console.mermail.app/mailbox en ${BENEFICIARY_EMAIL}`);
+    console.log(`   ✅ Contingency directive & Shard #2 delivered to Heir-test (${BENEFICIARY_EMAIL})`);
+    console.log(`   📬 [MERMAIL MCP SUCCESS]: Message dispatched from Agent-Custody (${CUSTODIAN_EMAIL}).`);
+    console.log(`   👉 VERIFY LIVE: Check Sent folder in Agent-Custody or Inbox in Heir-test.`);
   } catch (err) {
-    console.warn(`   ⚠️ Nota de envío Mermail: ${err.message}`);
+    console.warn(`   ⚠️ Heir dispatch notice: ${err.message}`);
   }
 
   // Notificación simultánea al Guardián
-  console.log(`\n4. Notificando paralelamente a GUARDIAN (${GUARDIAN_EMAIL})...`);
+  console.log(`\n4. Dispatching Simultaneous Legal Notice to GUARDIAN (${GUARDIAN_EMAIL})...`);
   try {
     const guardianAlert = NotaryAgentAdvisor.generateGuardianEscalationAlert({
       ownerName: "Owner-test (Gustavo)",
@@ -336,21 +336,21 @@ NOTARIAL EXECUTION RECEIPT (SOLANA DEVNET & SHAMIR)
         text: guardianAlert.bodyText
       }
     });
-    console.log(`   ✅ Alerta de escalamiento despachada a ${GUARDIAN_EMAIL}`);
-    console.log(`   📱 [TELEGRAM WEB / DESKTOP PUSH]: El Guardián recibe el push en tiempo real.`);
+    console.log(`   ✅ Escalation notice dispatched from Agent-Custody to GUARDIAN (${GUARDIAN_EMAIL})`);
+    console.log(`   📱 [TELEGRAM DESKTOP PUSH]: GUARDIAN receives real-time alert in Telegram.`);
   } catch (err) {
-    console.warn(`   ⚠️ Nota envío a guardián: ${err.message}`);
+    console.warn(`   ⚠️ Guardian dispatch notice: ${err.message}`);
   }
 
-  console.log(`\n5. Reconstrucción Matemática de la Herencia por el Heredero:`);
-  console.log(`   - Combinando Shard #1 (Offline del Heredero) + Shard #2 (Recibido por Mermail)...`);
+  console.log(`\n5. Mathematical Secret Reconstruction by Heir-test:`);
+  console.log(`   - Combining Shard #1 (Offline Heir Share) + Shard #2 (Received via Agent-Custody)...`);
   const reconstructed = combineShares([shardBeneficiary, shardAgent]);
-  console.log(`   - Clave Maestra Reconstruida: "${reconstructed}"`);
+  console.log(`   - Reconstructed Master Key: "${reconstructed}"`);
 
   if (reconstructed === masterSeed) {
-    console.log(`   🎉 [VERIFICACIÓN MATEMÁTICA EXITOSA]: Herencia recuperada con 100% de integridad.`);
+    console.log(`   🎉 [MATHEMATICAL VERIFICATION SUCCESS]: 100% data integrity recovered.`);
   } else {
-    console.error(`   ❌ Error en la reconstrucción matemática.`);
+    console.error(`   ❌ Mathematical reconstruction failed.`);
   }
 }
 
