@@ -61,16 +61,24 @@ Deployed on Solana Devnet:
 
 ---
 
-## Prerequisites
+## Prerequisites & Deployment Models
 
-* Node.js version 20 or higher.
-* Access to a Solana RPC endpoint (Devnet or Mainnet).
-* Mermail MCP credentials (API key and configured mailboxes).
-* Telegram Bot token and target Chat ID (optional, for real-time mobile push notifications).
+MDIS can be run under **two complementary models**:
+
+### Model A: Zero-Dependency Developer / Self-Hosted Mode (Available Today)
+**Any developer or friend can clone this repository right now and run it from scratch.** You do **NOT** depend on Mermail publishing or approving the skill in their public marketplace first:
+* Mermail exposes an open, permissionless MCP server (`https://console.mermail.app/mcp`).
+* Anyone with a free Mermail account can create mailboxes, grab their API key, and run the agent immediately via `node test-deadman-orchestrator.mjs` or deploy the included Cloudflare Worker (`wrangler deploy`).
+* All Solana Devnet smart contracts (`E4dA4YrW...`) and Pyth oracles are already deployed and open for public testing.
+
+### Model B: Native Mermail Workspace Agent Skill (Plug-and-Play)
+Once submitted to the Mermail ecosystem, the package inside `skills/mermail-deadman-switch/` enables:
+* 1-Click installation into any Mermail AI Agent workspace via the standard `SKILL.md` manifest.
+* Inbound Natural Language Setup: Owners configure their vault by sending an email (e.g., *"Set up vault for my son son@mermail.app with lawyer lawyer@law.com"*), parsed automatically by Gemini 3.8 Flash without touching a `.env` file.
 
 ---
 
-## Installation and Configuration
+## Installation and Quick Start
 
 1. Clone the repository:
 ```bash
@@ -83,41 +91,36 @@ cd Mermail-Digital-Inheritance-Switch-MDIS-
 npm install
 ```
 
-3. Configure environment variables:
-Create a `.env` file in the project root following this template:
-```env
-TELEGRAM_BOT_TOKEN="your_telegram_bot_token"
-TELEGRAM_CHAT_ID="your_telegram_chat_id"
-SOLANA_RPC_URL="https://api.devnet.solana.com"
-MERMAIL_MCP_URL="https://console.mermail.app/mcp"
-MERMAIL_API_KEY="your_mermail_api_key"
-
-CUSTODIAN_EMAIL="agent@mermail.app"
-CUSTODIAN_MAILBOX_ID="agent_mailbox_id"
-
-OWNER_EMAIL="owner@mermail.app"
-OWNER_MAILBOX_ID="owner_mailbox_id"
-OWNER_WALLET_SOL="owner_public_key"
-
-BENEFICIARY_EMAIL="beneficiary@mermail.app"
-BENEFICIARY_MAILBOX_ID="beneficiary_mailbox_id"
-BENEFICIARY_WALLET_SOL="beneficiary_public_key"
-
-GUARDIAN_EMAIL="guardian@notary.org"
+3. Configure environment:
+Copy `.env.example` to `.env`:
+```bash
+cp .env.example .env
 ```
+Populate your Mermail API keys and optional LLM keys (Gemini 3.8 Flash is configured by default with multi-provider fallback to OpenAI, Claude, or zero-latency local heuristics).
 
 ---
 
-## Operational Workflows
+## Running the Protocol
 
-### Interactive Onboarding Wizard
-Guides the user through role setup, generates Shamir shares for the secret phrase, and simulates both life check-ins and emergency triggering:
+### 1. Master Multi-Scenario Live Staging (Recommended)
+Runs the full end-to-end lifecycle connecting live Solana Devnet RPC, Mermail MCP, and Telegram pushes:
+```bash
+# Interactive menu:
+npm start
+
+# Direct scene execution (Zero-friction for screen recording):
+node test-deadman-orchestrator.mjs 1   # Scene 1: Passive On-chain Liveness & 48h Grace Warning
+node test-deadman-orchestrator.mjs 2   # Scene 2: System 1 Gemini 3.8 Flash vs Prompt Injections
+node test-deadman-orchestrator.mjs 3   # Scene 3: Confirmed Death, Shamir GF(2^8) & Heir/Guardian Push
+node test-deadman-orchestrator.mjs 4   # Full automated sequence
+```
+
+### 2. Interactive CLI Onboarding Wizard
 ```bash
 npm run demo
 ```
 
-### Continuous Telegram Service
-Launches the persistent bot service to process incoming commands (`/status`, `/checkin`, `/hold`):
+### 3. Continuous Telegram Bot Service
 ```bash
 npm run bot
 ```
