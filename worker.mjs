@@ -1,5 +1,5 @@
 /**
- * Cloudflare Worker: Autonomous Mermail Dead Man's Switch
+ * Cloudflare Worker: Autonomous Mermail Digital Inheritance Switch (MDIS)
  * Runs 24/7/365 serverless on Cloudflare's Edge network for $0/month.
  * 
  * CAPABILITIES:
@@ -159,16 +159,16 @@ export default {
       // Multi-channel redundancy: Telegram mobile push notification
       if (env.TELEGRAM_BOT_TOKEN && env.TELEGRAM_CHAT_ID) {
         const tgHtml = formatTelegramHtml({
-          title: "DEAD MAN'S SWITCH CONTINGENCY ACTIVATED",
+          title: "MDIS DIGITAL INHERITANCE ACTIVATED",
           fields: [
             { label: "Principal", value: engine.ownerEmail },
             { label: "Beneficiary", value: engine.beneficiaryEmail },
-            { label: "Status", value: "Irrevocable contingency protocol triggered" },
+            { label: "Status", value: "Irrevocable legacy protocol triggered" },
             { label: "Directives Vault", value: engine.state.contingencyDirectives?.encryptedSecretVaultId || "Vault-Alpha" },
             { label: "Rescue Funds", value: "0.05 SOL" }
           ]
         });
-        const tgPlain = `DEAD MAN'S SWITCH CONTINGENCY ACTIVATED\nPrincipal: ${engine.ownerEmail}\nBeneficiary: ${engine.beneficiaryEmail}\nStatus: Contingency protocol triggered.`;
+        const tgPlain = `MDIS DIGITAL INHERITANCE ACTIVATED\nPrincipal: ${engine.ownerEmail}\nBeneficiary: ${engine.beneficiaryEmail}\nStatus: Contingency protocol triggered.`;
         await dispatchTelegramNotification({
           botToken: env.TELEGRAM_BOT_TOKEN,
           chatId: env.TELEGRAM_CHAT_ID,
@@ -185,15 +185,15 @@ export default {
         await dispatchMermailEmail(mcpUrl, env.MERMAIL_API_KEY_CUSTODIAN, env.CUSTODIAN_MAILBOX_ID, {
           to: engine.ownerEmail,
           from: engine.custodianEmail,
-          subject: `[URGENTE] Recordatorio de Prueba de Vida - Dead Man's Switch (${evalRes.graceHoursRemaining}h restantes)`,
-          text: `Aviso de contingencia: No se detectó actividad on-chain ni pulso de vida. Restan ${evalRes.graceHoursRemaining} horas antes de la ejecución irrevocable.`
+          subject: `[AVISO URGENTE] Recordatorio de Prueba de Vida - Protocolo MDIS (${evalRes.graceHoursRemaining}h restantes)`,
+          text: `Aviso de resguardo digital: No se detectó actividad on-chain ni pulso de vida. Restan ${evalRes.graceHoursRemaining} horas antes de la ejecución de entrega.`
         });
       }
 
       // Multi-channel redundancy: Telegram warning alert
       if (env.TELEGRAM_BOT_TOKEN && env.TELEGRAM_CHAT_ID) {
         const tgWarnHtml = formatTelegramHtml({
-          title: "DEAD MAN'S SWITCH WARNING",
+          title: "MDIS VAULT WARNING",
           fields: [
             { label: "Principal", value: engine.ownerEmail },
             { label: "Notice", value: "Inactivity threshold reached. Grace window open." },
@@ -201,7 +201,7 @@ export default {
             { label: "Action Required", value: "Submit check-in email to avoid irrevocable release." }
           ]
         });
-        const tgWarnPlain = `DEAD MAN'S SWITCH WARNING\nPrincipal: ${engine.ownerEmail}\nGrace Hours Remaining: ${evalRes.graceHoursRemaining}h`;
+        const tgWarnPlain = `MDIS VAULT WARNING\nPrincipal: ${engine.ownerEmail}\nGrace Hours Remaining: ${evalRes.graceHoursRemaining}h`;
         await dispatchTelegramNotification({
           botToken: env.TELEGRAM_BOT_TOKEN,
           chatId: env.TELEGRAM_CHAT_ID,
@@ -227,7 +227,7 @@ export default {
       const switchId = url.searchParams.get("id") || "DMS-VAULT-2026-XEN";
       const state = await getState(env, switchId);
       return new Response(JSON.stringify({
-        service: "Mermail Dead Man's Switch (Cloudflare Worker)",
+        service: "Mermail Digital Inheritance Switch - MDIS (Cloudflare Worker)",
         environment: "Cloudflare Edge Serverless",
         status: state ? state.status : "NOT_CONFIGURED",
         state: state || null,
@@ -348,7 +348,7 @@ export default {
         if (text === "/status") {
           return new Response(JSON.stringify({
             ok: true,
-            reply: `Dead Man's Switch Status: ${stored ? stored.status : 'NOT_CONFIGURED'}`,
+            reply: `MDIS Protocol Status: ${stored ? stored.status : 'NOT_CONFIGURED'}`,
             switchId
           }), { headers: { "content-type": "application/json" } });
         }
@@ -383,6 +383,6 @@ export default {
       }
     }
 
-    return new Response("Mermail Dead Man's Switch - Cloudflare Serverless Worker", { status: 200 });
+    return new Response("Mermail Digital Inheritance Switch (MDIS) - Cloudflare Serverless Worker", { status: 200 });
   }
 };

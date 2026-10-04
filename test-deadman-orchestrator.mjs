@@ -1,5 +1,5 @@
 /**
- * Mermail Dead Man's Switch - Autonomous Multi-Scenario Orchestrator (Live Demo)
+ * Mermail Digital Inheritance Switch (MDIS) - Autonomous Multi-Scenario Orchestrator (Live Demo)
  * Ejecuta el protocolo completo contra Mermail MCP y Solana Devnet en vivo.
  * Soporta ejecución autónoma con argumentos o menú interactivo para video demo.
  */

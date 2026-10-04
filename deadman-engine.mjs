@@ -1,5 +1,5 @@
 /**
- * Dead Man's Switch Engine
+ * Mermail Digital Inheritance Switch (MDIS)
  * Autonomous contingency, digital inheritance, and asset rescue engine.
  * 
  * ARCHITECTURE (DUAL-CORE & MIXED LIVENESS):
@@ -92,8 +92,8 @@ export class DeadMansSwitchEngine {
       contingencyDirectives: {
         encryptedSecretVaultId: "VAULT_SHAMIR_SECRET_SHARE_001_AES256",
         emergencyRescueSolAmount: 0.05,
-        finalNoticeSubject: "[CONTINGENCY ACTIVATION] Dead Man's Switch Protocol Executed",
-        warningNoticeSubject: "[URGENT] Proof of Life Check-in - Dead Man's Switch"
+        finalNoticeSubject: "[DIGITAL INHERITANCE] Legacy Protocol Execution Notice (MDIS)",
+        warningNoticeSubject: "[ACTION REQUIRED] Vault Check-in Notice (MDIS)"
       }
     };
   }
