@@ -1,0 +1,40 @@
+{
+  "name": "mermail-deadman-switch",
+  "version": "1.0.0",
+  "description": "Autonomous Digital Contingency, Inheritance, and Dead Man's Switch Agent for Mermail and Solana",
+  "type": "module",
+  "main": "deadman-engine.mjs",
+  "scripts": {
+    "test": "node skills/mermail-deadman-switch/tests/test-runner.mjs",
+    "test:live": "node test-real-resources.mjs",
+    "test:worker": "node test-cloudflare-worker.mjs",
+    "test:contract": "node test-solana-smart-contract.mjs",
+    "test:invariants": "node test-solana-dev-invariants.mjs",
+    "test:chaos": "node test-solana-dev-phase3-phase4.mjs",
+    "test:telegram": "node test-telegram-notifier.mjs",
+    "test:redteam": "node test-adversarial-redteam.mjs",
+    "test:boundary": "node test-boundary-and-live-exploits.mjs",
+    "bot": "node telegram-bot-service.mjs",
+    "init:vault": "node init-live-vault-devnet.mjs",
+    "build:contract": "cmd /c build-contract.bat",
+    "build:contract:docker": "docker compose run --rm anchor-builder",
+    "test:all": "node run-all-tests.mjs",
+    "test:death": "node test-confirmed-death.mjs",
+    "demo": "node interactive-setup.mjs",
+    "start": "node test-deadman-orchestrator.mjs"
+  },
+  "keywords": [
+    "mermail",
+    "agent-skill",
+    "dead-mans-switch",
+    "solana",
+    "superteam",
+    "paybox",
+    "contingency"
+  ],
+  "author": "Totopo27",
+  "license": "MIT",
+  "dependencies": {
+    "@solana/web3.js": "^1.99.0"
+  }
+}
