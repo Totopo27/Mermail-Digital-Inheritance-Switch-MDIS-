@@ -527,6 +527,123 @@ export class NotaryAgentAdvisor {
   }
 
   /**
+   * PARSER ROBUSTO DE ONBOARDING NATURAL (ZERO-CONFIG SETUP)
+   * Analiza el primer correo que el usuario envía para configurar su bóveda.
+   * Emplea extracción heurística de alta cobertura + LLM estructurado (Gemini 3.8 Flash).
+   * Tolera lenguaje informal, coloquial, sinónimos y mezcla español/inglés.
+   */
+  static async parseInboundOnboardingDirective(emailContent, options = {}) {
+    if (!emailContent || typeof emailContent !== "string") {
+      return { success: false, error: "Empty directive content" };
+    }
+
+    const text = emailContent.trim();
+    const lower = text.toLowerCase();
+
+    // 1. Extracción Determinista de Wallets de Solana (Base58 entre 32 y 44 caracteres)
+    const solanaAddressRegex = /\b([1-9A-HJ-NP-Za-km-z]{32,44})\b/g;
+    const potentialWallets = (text.match(solanaAddressRegex) || []).filter(w => {
+      // Excluir palabras normales o hashes cortos que no parezcan wallets
+      return w.length >= 32 && /[0-9]/.test(w) && /[A-Z]/.test(w) && /[a-z]/.test(w);
+    });
+
+    // 2. Extracción Determinista de Correos Electrónicos
+    const emailRegex = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/g;
+    const detectedEmails = text.match(emailRegex) || [];
+
+    // 3. Extracción de Intervalo de Días
+    let intervalDays = 30; // Por defecto
+    const intervalMatch = lower.match(/(\d+)\s*(días|dias|days|semanas|weeks|meses|months)/i);
+    if (intervalMatch) {
+      const num = parseInt(intervalMatch[1], 10);
+      const unit = intervalMatch[2].toLowerCase();
+      if (unit.startsWith("semana") || unit.startsWith("week")) intervalDays = num * 7;
+      else if (unit.startsWith("mes") || unit.startsWith("month")) intervalDays = num * 30;
+      else intervalDays = num;
+    }
+
+    // 4. Mapeo Semántico Heurístico de Roles por Contexto y Sinónimos
+    // Sinónimos de Heredero / Beneficiario:
+    // hijo, hija, heredero, beneficiario, esposa, esposo, pareja, hermano, hermana, heir, beneficiary, son, daughter, spouse
+    let beneficiaryEmail = null;
+    let guardianEmail = null;
+
+    const heirContextRegex = /(hijo|hija|heredero|beneficiario|esposa|esposo|pareja|hermano|hermana|familiar|sucesor|heir|beneficiary|son|daughter|spouse|child|successor)[^@\n]{0,60}\b([A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,})\b/i;
+    const heirMatch = text.match(heirContextRegex);
+    if (heirMatch) {
+      beneficiaryEmail = heirMatch[2];
+    }
+
+    // Sinónimos de Guardián / Protector / Notario / Respaldo:
+    // abogado, guardián, protector, albacea, amigo, notario, confianza, guardian, lawyer, attorney, trustee, protector, friend
+    const guardianContextRegex = /(abogado|guardi[aá]n|protector|albacea|amigo|notario|confianza|socio|legal|lawyer|attorney|guardian|trustee|protector|friend|backup)[^@\n]{0,60}\b([A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,})\b/i;
+    const guardianMatch = text.match(guardianContextRegex);
+    if (guardianMatch) {
+      guardianEmail = guardianMatch[2];
+    }
+
+    // Si los regex contextuales no resolvieron pero hay 2 correos detectados:
+    if (!beneficiaryEmail && detectedEmails.length > 0) {
+      beneficiaryEmail = detectedEmails[0];
+    }
+    if (!guardianEmail && detectedEmails.length > 1) {
+      guardianEmail = detectedEmails.find(e => e !== beneficiaryEmail) || detectedEmails[1];
+    }
+
+    // 5. EVALUACIÓN Y REFINAMIENTO CON GEMINI 3.8 FLASH (Si está configurado)
+    const geminiKey = process.env.GEMINI_API_KEY || options.geminiApiKey;
+    if (geminiKey) {
+      try {
+        const geminiModel = process.env.GEMINI_MODEL || "gemini-3.8-flash";
+        const prompt = `Extract deadman switch onboarding parameters from this user email into JSON:
+Schema:
+{
+  "beneficiaryEmail": string or null,
+  "guardianEmail": string or null,
+  "ownerWallet": string or null,
+  "intervalDays": number,
+  "secretSummary": string
+}
+User email:
+"${text}"`;
+
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${geminiKey}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ role: "user", parts: [{ text: prompt }] }],
+            generationConfig: { temperature: 0.0, responseMimeType: "application/json" }
+          })
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          const parsed = JSON.parse(data.candidates?.[0]?.content?.parts?.[0]?.text || "{}");
+          return {
+            success: true,
+            beneficiaryEmail: parsed.beneficiaryEmail || beneficiaryEmail,
+            guardianEmail: parsed.guardianEmail || guardianEmail,
+            ownerWallet: parsed.ownerWallet || (potentialWallets[0] || null),
+            intervalDays: parsed.intervalDays || intervalDays,
+            source: "gemini-3.8-flash"
+          };
+        }
+      } catch (err) {
+        // Fallback a heurística local
+      }
+    }
+
+    return {
+      success: Boolean(beneficiaryEmail),
+      beneficiaryEmail,
+      guardianEmail,
+      ownerWallet: potentialWallets[0] || null,
+      intervalDays,
+      source: "local-heuristic-matrix"
+    };
+  }
+
+  /**
    * SYSTEM 1 CLASSIFIER: CALIBRATED SEMANTIC INTENT CLASSIFICATION
    * Inspira la arquitectura de "System One Models" (TypeSafe / Daniel Kahneman):
    * Un modelo de decisión tipada que clasifica entradas de lenguaje natural
