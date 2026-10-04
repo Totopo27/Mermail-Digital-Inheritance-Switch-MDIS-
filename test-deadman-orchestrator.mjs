@@ -325,6 +325,26 @@ async function main() {
     process.exit(0);
   }
 
+  // Soporte directo por argumento de terminal (ej: node test-deadman-orchestrator.mjs 1)
+  const argChoice = process.argv[2]?.trim();
+  if (argChoice) {
+    if (argChoice === "1") {
+      await runScenario1_Liveness();
+    } else if (argChoice === "2") {
+      await runScenario2_DefenseAndSemanticHold();
+    } else if (argChoice === "3") {
+      await runScenario3_ConfirmedDeathAndRelease();
+    } else {
+      await runScenario1_Liveness();
+      await runScenario2_DefenseAndSemanticHold();
+      await runScenario3_ConfirmedDeathAndRelease();
+    }
+    console.log("\n===============================================================================");
+    console.log("🏁 DEMO FINALIZADA CON ÉXITO");
+    console.log("===============================================================================\n");
+    process.exit(0);
+  }
+
   const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout
