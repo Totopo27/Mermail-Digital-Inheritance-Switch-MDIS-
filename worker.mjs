@@ -24,6 +24,19 @@ import {
 // In-memory fallback for local execution / testing without KV
 const memoryStore = new Map();
 
+/**
+ * Masks an email address for privacy-safe logging (LOW-04).
+ * Example: "owner@mermail.app" -> "o***r@mermail.app"
+ */
+function maskEmail(email) {
+  if (!email || typeof email !== "string") return "[REDACTED]";
+  const parts = email.split("@");
+  if (parts.length !== 2) return "[REDACTED]";
+  const [user, domain] = parts;
+  if (user.length <= 2) return `${user[0]}*@${domain}`;
+  return `${user[0]}***${user[user.length - 1]}@${domain}`;
+}
+
 async function getState(env, key) {
   if (env && env.DEADMAN_KV) {
     const val = await env.DEADMAN_KV.get(key, { type: "json" });
@@ -161,14 +174,14 @@ export default {
         const tgHtml = formatTelegramHtml({
           title: "MDIS DIGITAL INHERITANCE ACTIVATED",
           fields: [
-            { label: "Principal", value: engine.ownerEmail },
-            { label: "Beneficiary", value: engine.beneficiaryEmail },
+            { label: "Principal", value: maskEmail(engine.ownerEmail) },
+            { label: "Beneficiary", value: maskEmail(engine.beneficiaryEmail) },
             { label: "Status", value: "Irrevocable legacy protocol triggered" },
             { label: "Directives Vault", value: engine.state.contingencyDirectives?.encryptedSecretVaultId || "Vault-Alpha" },
             { label: "Rescue Funds", value: "0.05 SOL" }
           ]
         });
-        const tgPlain = `MDIS DIGITAL INHERITANCE ACTIVATED\nPrincipal: ${engine.ownerEmail}\nBeneficiary: ${engine.beneficiaryEmail}\nStatus: Contingency protocol triggered.`;
+        const tgPlain = `MDIS DIGITAL INHERITANCE ACTIVATED\nPrincipal: ${maskEmail(engine.ownerEmail)}\nBeneficiary: ${maskEmail(engine.beneficiaryEmail)}\nStatus: Contingency protocol triggered.`;
         await dispatchTelegramNotification({
           botToken: env.TELEGRAM_BOT_TOKEN,
           chatId: env.TELEGRAM_CHAT_ID,
@@ -195,13 +208,13 @@ export default {
         const tgWarnHtml = formatTelegramHtml({
           title: "MDIS VAULT WARNING",
           fields: [
-            { label: "Principal", value: engine.ownerEmail },
+            { label: "Principal", value: maskEmail(engine.ownerEmail) },
             { label: "Notice", value: "Inactivity threshold reached. Grace window open." },
             { label: "Grace Hours Remaining", value: `${evalRes.graceHoursRemaining}h` },
             { label: "Action Required", value: "Submit check-in email to avoid irrevocable release." }
           ]
         });
-        const tgWarnPlain = `MDIS VAULT WARNING\nPrincipal: ${engine.ownerEmail}\nGrace Hours Remaining: ${evalRes.graceHoursRemaining}h`;
+        const tgWarnPlain = `MDIS VAULT WARNING\nPrincipal: ${maskEmail(engine.ownerEmail)}\nGrace Hours Remaining: ${evalRes.graceHoursRemaining}h`;
         await dispatchTelegramNotification({
           botToken: env.TELEGRAM_BOT_TOKEN,
           chatId: env.TELEGRAM_CHAT_ID,
@@ -240,6 +253,18 @@ export default {
     // 1-Click Vault Setup API (Sin terminal ni fricción)
     if (url.pathname === "/api/setup-vault" && request.method === "POST") {
       try {
+        // MED-03: Validate Setup Authentication Token if configured
+        if (env.ADMIN_SETUP_SECRET) {
+          const authHeader = request.headers.get("Authorization") || "";
+          const expected = `Bearer ${env.ADMIN_SETUP_SECRET}`;
+          if (authHeader !== expected) {
+            return new Response(JSON.stringify({ error: "Unauthorized: Invalid or missing setup authorization token" }), {
+              status: 401,
+              headers: { "content-type": "application/json" }
+            });
+          }
+        }
+
         const body = await request.json();
         const {
           ownerEmail,
@@ -286,6 +311,17 @@ export default {
     // Receptor de Webhooks de Mermail (Disparo por eventos en tiempo real)
     if (url.pathname === "/webhooks/mermail" && request.method === "POST") {
       try {
+        // LOW-03: Validate Mermail Webhook Secret Token if configured
+        if (env.MERMAIL_WEBHOOK_SECRET) {
+          const secretHeader = request.headers.get("X-Mermail-Webhook-Secret") || "";
+          if (secretHeader !== env.MERMAIL_WEBHOOK_SECRET) {
+            return new Response(JSON.stringify({ error: "Unauthorized: Invalid Mermail webhook secret token" }), {
+              status: 403,
+              headers: { "content-type": "application/json" }
+            });
+          }
+        }
+
         const payload = await request.json();
         const switchId = "DMS-VAULT-2026-XEN";
         const stored = await getState(env, switchId);

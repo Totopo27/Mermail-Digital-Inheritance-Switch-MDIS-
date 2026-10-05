@@ -179,6 +179,9 @@ export class SolanaDeadmanVaultSimulator {
     if (!this.beneficiary.equals(callerPubkey) && !this.owner.equals(callerPubkey)) {
       throw new Error("UnauthorizedCaller");
     }
+    if (this.splTokenBalance > 0) {
+      throw new Error("VaultHasUnclaimedTokens");
+    }
     const refundedRent = this.lamports;
     this.lamports = 0;
     this.isClosed = true;

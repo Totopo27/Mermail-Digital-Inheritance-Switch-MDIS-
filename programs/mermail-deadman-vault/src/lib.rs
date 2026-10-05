@@ -3,7 +3,20 @@ use anchor_lang::system_program;
 use anchor_spl::token::{self, Mint, Token, TokenAccount, TransferChecked};
 use pyth_sdk_solana::load_price_feed_from_account_info;
 
+use solana_security_txt::security_txt;
+
 declare_id!("E4dA4YrWnMgFv7NNseHjw8r2yikArPGiEnrxX4YYExdX");
+
+security_txt! {
+    name: "Mermail Digital Inheritance Switch (MDIS)",
+    project_url: "https://mermail.io",
+    contacts: "email:security@mermail.io",
+    policy: "https://github.com/Totopo27/Mermail-Digital-Inheritance-Switch-MDIS-/blob/main/SECURITY.md",
+    preferred_languages: "en,es",
+    source_code: "https://github.com/Totopo27/Mermail-Digital-Inheritance-Switch-MDIS-",
+    source_revision: "main",
+    auditors: "auditor-skill, SolanaBR"
+}
 
 pub const MAX_HOLD_SECONDS_PER_CALL: i64 = 30 * 86400; // 30 días
 pub const MAX_CUMULATIVE_HOLD_SECONDS: i64 = 60 * 86400; // 60 días acumulativos totales
@@ -91,6 +104,7 @@ pub mod mermail_deadman_vault {
 
         let clock = Clock::get()?;
         vault.last_heartbeat_timestamp = clock.unix_timestamp;
+        vault.total_hold_seconds_consumed = 0;
 
         msg!("Vault configuration updated by owner {}. Heartbeat reset.", vault.owner);
         Ok(())
@@ -119,6 +133,7 @@ pub mod mermail_deadman_vault {
 
         vault.last_heartbeat_timestamp = now;
         vault.hold_until_timestamp = 0;
+        vault.total_hold_seconds_consumed = 0;
         vault.status = VaultStatus::Active;
 
         msg!("Heartbeat refreshed on-chain at timestamp {}", vault.last_heartbeat_timestamp);
@@ -155,6 +170,12 @@ pub mod mermail_deadman_vault {
         let vault = &ctx.accounts.vault_account;
         require!(vault.status != VaultStatus::Triggered, DeadmanError::VaultAlreadyTriggered);
         require!(vault.status != VaultStatus::OracleDisputePending, DeadmanError::OracleDisputeActive);
+
+        let clock = Clock::get()?;
+        let now = clock.unix_timestamp;
+        if vault.status == VaultStatus::GuardianHold && now < vault.hold_until_timestamp {
+            return Err(DeadmanError::GuardianHoldActive.into());
+        }
 
         let vault_lamports = vault.to_account_info().lamports();
         let rent = Rent::get()?.minimum_balance(vault.to_account_info().data_len());
@@ -201,6 +222,12 @@ pub mod mermail_deadman_vault {
         let vault = &ctx.accounts.vault_account;
         require!(vault.status != VaultStatus::Triggered, DeadmanError::VaultAlreadyTriggered);
         require!(vault.status != VaultStatus::OracleDisputePending, DeadmanError::OracleDisputeActive);
+
+        let clock = Clock::get()?;
+        let now = clock.unix_timestamp;
+        if vault.status == VaultStatus::GuardianHold && now < vault.hold_until_timestamp {
+            return Err(DeadmanError::GuardianHoldActive.into());
+        }
 
         let owner_key = vault.owner.key();
         let seeds = &[
@@ -263,9 +290,15 @@ pub mod mermail_deadman_vault {
     pub fn attest_oracle_trigger(ctx: Context<OracleAttestation>, certificate_hash: [u8; 32]) -> Result<()> {
         let vault = &mut ctx.accounts.vault_account;
         require!(vault.status != VaultStatus::Triggered, DeadmanError::VaultAlreadyTriggered);
-        require!(certificate_hash != [0u8; 32], DeadmanError::InvalidCertificateHash);
+        require!(vault.status != VaultStatus::OracleDisputePending, DeadmanError::OracleDisputeActive);
 
         let clock = Clock::get()?;
+        let now = clock.unix_timestamp;
+        if vault.status == VaultStatus::GuardianHold && now < vault.hold_until_timestamp {
+            return Err(DeadmanError::GuardianHoldActive.into());
+        }
+
+        require!(certificate_hash != [0u8; 32], DeadmanError::InvalidCertificateHash);
         vault.oracle_certificate_hash = certificate_hash;
         vault.oracle_dispute_until = clock.unix_timestamp + 48 * 3600;
         vault.status = VaultStatus::OracleDisputePending;
@@ -423,6 +456,17 @@ pub mod mermail_deadman_vault {
     pub fn close_vault(ctx: Context<CloseVault>) -> Result<()> {
         let vault = &ctx.accounts.vault_account;
         require!(vault.status == VaultStatus::Triggered, DeadmanError::VaultNotTriggered);
+
+        // LOW-01: Ensure no orphan SPL tokens remain in any provided vault token accounts
+        for acc in ctx.remaining_accounts.iter() {
+            if *acc.owner == anchor_spl::token::ID {
+                let token_acc = anchor_spl::token::TokenAccount::try_deserialize(&mut &acc.data.borrow()[..])
+                    .map_err(|_| DeadmanError::InvalidTokenAccountOwner)?;
+                if token_acc.owner == vault.key() {
+                    require!(token_acc.amount == 0, DeadmanError::VaultHasUnclaimedTokens);
+                }
+            }
+        }
 
         msg!("Vault closed permanently. Rent lamports refunded to beneficiary.");
         Ok(())
@@ -752,4 +796,6 @@ pub enum DeadmanError {
     UnauthorizedOracle,
     #[msg("Mathematical overflow occurred")]
     MathOverflow,
+    #[msg("Vault still holds unclaimed SPL tokens. Claim or drain tokens before closing vault.")]
+    VaultHasUnclaimedTokens,
 }
