@@ -95,17 +95,17 @@ async function callMcp(apiKey, name, args) {
 
 function printHeader() {
   console.log("===============================================================================");
-  console.log("🛡️  MERMAIL DIGITAL INHERITANCE SWITCH (MDIS) — ORQUESTADOR DE DEMO EN VIVO 🛡️");
-  console.log("Protocolo Autónomo de Contingencia & Custodia Fraccionada en Solana + Mermail");
+  console.log("🛡️  MERMAIL DIGITAL INHERITANCE SWITCH (MDIS) — LIVE DEMO ORCHESTRATOR 🛡️");
+  console.log("Autonomous Contingency Protocol & Fractional Threshold Custody on Solana + Mermail");
   console.log("===============================================================================\n");
-  console.log(`[CONFIGURACIÓN ACTIVA]:`);
+  console.log(`[ACTIVE SYSTEM CONFIGURATION]:`);
   console.log(`- Mermail MCP Server:  ${MCP_URL}`);
-  console.log(`- Custodio Agente:     Agent-Custody-Test <${CUSTODIAN_EMAIL}> (Mailbox: ${CUSTODIAN_MAILBOX_ID})`);
-  console.log(`- Titular / Owner:     Owner-test <${OWNER_EMAIL}> (Solana: ${OWNER_WALLET})`);
-  console.log(`- Heredero / Heir:     Heir-test <${BENEFICIARY_EMAIL}> (Solana: ${BENEFICIARY_WALLET})`);
-  console.log(`- Guardián / Legal:    GUARDIAN <${GUARDIAN_EMAIL}>`);
-  console.log(`- Wallet Agente (Sol): ${process.env.MERMAIL_DELEGATED_SOL_WALLET || "3iCTFReDs6KxAiFeryFKd18LmZPnFLMLhWa1A7AfFrrv"} [Autonomous PayBox]`);
-  console.log(`- Solana RPC:          ${process.env.SOLANA_RPC_URL || "https://api.devnet.solana.com"}\n`);
+  console.log(`- Custodian Agent:     Agent-Custody-Test <${CUSTODIAN_EMAIL}> (Mailbox: ${CUSTODIAN_MAILBOX_ID})`);
+  console.log(`- Principal / Owner:   Owner-test <${OWNER_EMAIL}> (Solana: ${OWNER_WALLET})`);
+  console.log(`- Primary Beneficiary: Heir-test <${BENEFICIARY_EMAIL}> (Solana: ${BENEFICIARY_WALLET})`);
+  console.log(`- Legal Guardian:      GUARDIAN <${GUARDIAN_EMAIL}>`);
+  console.log(`- Agent PayBox Wallet: ${process.env.MERMAIL_DELEGATED_SOL_WALLET || "3iCTFReDs6KxAiFeryFKd18LmZPnFLMLhWa1A7AfFrrv"} [Autonomous Mode]`);
+  console.log(`- Solana RPC Endpoint: ${process.env.SOLANA_RPC_URL || "https://api.devnet.solana.com"}\n`);
 }
 
 // -----------------------------------------------------------------------------
@@ -397,7 +397,7 @@ NOTARIAL EXECUTION RECEIPT (SOLANA DEVNET & SHAMIR)
   }
 
   console.log(`\n5. Mathematical Secret Reconstruction Analysis:`);
-  console.log(`   [Flujo A: Protocolo Mermail Estándar]`);
+  console.log(`   [Flow A: Standard Mermail Protocol Settlement]`);
   console.log(`   - Combining Shard #1 (Offline Heir Share) + Shard #2 (Received via Agent-Custody)...`);
   const reconstructed = combineShares([shardBeneficiary, shardAgent]);
   console.log(`   - Reconstructed Master Key: "${reconstructed}"`);
@@ -408,7 +408,7 @@ NOTARIAL EXECUTION RECEIPT (SOLANA DEVNET & SHAMIR)
     console.error(`   ❌ Mathematical reconstruction failed.`);
   }
 
-  console.log(`\n   [Flujo B: Rescate Soberano de Emergencia (CERO DEPENDENCIA DE MERMAIL)]`);
+  console.log(`\n   [Flow B: Sovereign Emergency Fallback (ZERO VENDOR LOCK-IN / NO MERMAIL REQUIRED)]`);
   console.log(`   - Simulating Mermail agent servers 100% offline or decommissioned.`);
   console.log(`   - Combining Shard #1 (Offline Heir Share) + Shard #3 (Entrusted to GUARDIAN)...`);
   const sovereignReconstructed = combineShares([shardBeneficiary, shardGuardian]);
@@ -978,7 +978,7 @@ async function main() {
     await runScenario2_DefenseAndSemanticHold();
     await runScenario3_ConfirmedDeathAndRelease();
     console.log("\n===============================================================================");
-    console.log("🏁 DEMO COMPLETA FINALIZADA CON ÉXITO");
+    console.log("🏁 FULL DEMO EXECUTION COMPLETED SUCCESSFULLY");
     console.log("===============================================================================\n");
     process.exit(0);
   }
@@ -1010,7 +1010,7 @@ async function main() {
       await runScenario3_ConfirmedDeathAndRelease();
     }
     console.log("\n===============================================================================");
-    console.log("🏁 DEMO FINALIZADA CON ÉXITO");
+    console.log("🏁 DEMO EXECUTION COMPLETED SUCCESSFULLY");
     console.log("===============================================================================\n");
     process.exit(0);
   }
@@ -1022,19 +1022,19 @@ async function main() {
 
   const ask = (q) => new Promise(res => rl.question(q, res));
 
-  console.log("Seleccioná la escena que querés ejecutar en vivo para el video:");
-  console.log("  [1] Escenario 1: Sensor On-Chain en Solana Devnet & Auditoría de Buzón");
-  console.log("  [2] Escenario 2: Sistema 1 Semántico (Guardrails contra Prompt Injection & Hold Médico)");
-  console.log("  [3] Escenario 3: Muerte Confirmada & Despacho Real de Shard #2 + Rescate Soberano (A+C)");
-  console.log("  [4] Escenario 4 (Interactivo): Falsa Alarma & Cancelación en Vivo por Correo");
-  console.log("  [5] Escenario 5: Defensa contra Reclamo Prematuro / Fraude del Heredero");
-  console.log("  [6] Escenario 6: Veto Notarial del Guardián & Cancelación de Disputa");
-  console.log("  [7] Escenario 7: Invariantes Críticas (Fin de Pausa Médica, Timelock & Cool-Off)");
-  console.log("  [8] Escenario 8: Atestación Fiduciaria de Vida por el Guardián (Cero Conexión Digital)");
-  console.log("  [9] Escenario 9: Distribución Multi-Beneficiario & Oráculo Pyth Anti-Volatilidad");
-  console.log("  [10] Ejecución Completa de Todo el Flujo Secuencial (1 + 2 + 3)\n");
+  console.log("Select the live scenario to execute:");
+  console.log("  [1] Scenario 1: On-Chain Solana Devnet Sensor & Mailbox Audit");
+  console.log("  [2] Scenario 2: System 1 Semantic AI (Prompt Injection Defenses & Medical Hold)");
+  console.log("  [3] Scenario 3: Confirmed Contingency & Real Shard #2 Release + Sovereign Fallback (A+C)");
+  console.log("  [4] Scenario 4 (Interactive): Live False Alarm & Real-Time Email Check-in");
+  console.log("  [5] Scenario 5: Premature Heir Claim & Social Engineering Defense");
+  console.log("  [6] Scenario 6: Legal Guardian Veto & Formal Dispute Resolution");
+  console.log("  [7] Scenario 7: Critical Edge-Case Invariants (Medical Hold Expiry, Timelock & Cool-Off)");
+  console.log("  [8] Scenario 8: Guardian Fiduciary Liveness Attestation (Zero Digital Connection Defense)");
+  console.log("  [9] Scenario 9: Multi-Beneficiary Estate Quotas & Pyth Oracle Anti-Volatility Shield");
+  console.log("  [10] Full Sequential Execution (Scenarios 1 + 2 + 3)\n");
 
-  const choice = (await ask("Ingresá opción [1-10] (por defecto 10): ")).trim() || "10";
+  const choice = (await ask("Enter choice [1-10] (default 10): ")).trim() || "10";
   rl.close();
 
   if (choice === "1") {
