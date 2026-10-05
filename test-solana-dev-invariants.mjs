@@ -15,6 +15,7 @@ import {
   SolanaDeadmanVaultSimulator,
   RENT_RESERVE_MINIMUM_LAMPORTS
 } from "./client/deadman-vault-client.mjs";
+import { DeadMansSwitchEngine } from "./deadman-engine.mjs";
 
 async function runSolanaDevInvariantTests() {
   console.log("===============================================================");
@@ -273,22 +274,52 @@ async function runSolanaDevInvariantTests() {
   // -------------------------------------------------------------
   console.log("[TEST 6/6] Owner Config Rotation & Formal Vault Closure...");
   const newGuardian = Keypair.generate();
+  const newBeneficiary = Keypair.generate();
   
-  // 6.a: Owner actualiza configuración mientras está activo
+  // 6.a: Owner actualiza configuración mientras está activo (rotando beneficiario y guardián)
   vault5.updateConfig(owner.publicKey, {
+    beneficiary: newBeneficiary.publicKey,
     guardian: newGuardian.publicKey,
     heartbeatInterval: 15 * 86400
   });
-  const configUpdated = vault5.guardian.equals(newGuardian.publicKey) && vault5.heartbeatIntervalSeconds === 15 * 86400;
+  const configUpdated = vault5.beneficiary.equals(newBeneficiary.publicKey) && 
+                        vault5.guardian.equals(newGuardian.publicKey) && 
+                        vault5.heartbeatIntervalSeconds === 15 * 86400;
 
   // 6.b: Expirar y cerrar formalmente el vault1 del Test 1
   const closeRes = vault.closeVault(beneficiary.publicKey);
   const vaultClosedCleanly = vault.isClosed && vault.lamports === 0;
 
-  if (configUpdated && closeRes.success && vaultClosedCleanly) {
+  // 6.c: Validar sincronización canónica de timelocks entre Engine y Vault on-chain
+  const engine = new DeadMansSwitchEngine({
+    tier1SoftPingDays: 30,
+    tier4TriggerDays: 60
+  });
+  const params = engine.deriveOnChainTimelockParams();
+  const timelocksInSync = params.heartbeatIntervalSeconds === 30 * 86400 &&
+                          params.gracePeriodSeconds === 30 * 86400 &&
+                          params.totalDays === 60;
+
+  // 6.d: Validar re-sharding y rotación criptográfica de custodia (Shamir 2-de-3)
+  const initialShares = engine.setupThresholdVault("MY-SECRET-SEED-PHRASE-2026");
+  const rotation = engine.rotateThresholdVault({
+    recoveryShares: [initialShares.beneficiaryShare, initialShares.custodianShare],
+    newGuardianEmails: ["new-guardian@mermail.app"]
+  });
+  const reconstructedFromNewShares = engine.reconstructVaultSecret([
+    rotation.beneficiaryShare,
+    rotation.guardianShare
+  ]);
+  const reshardingValid = rotation.generation === 2 &&
+                          reconstructedFromNewShares === "MY-SECRET-SEED-PHRASE-2026" &&
+                          engine.guardianEmails.includes("new-guardian@mermail.app");
+
+  if (configUpdated && closeRes.success && vaultClosedCleanly && timelocksInSync && reshardingValid) {
     console.log("   - Owner vivo rotó guardián e intervalo en estado Active: ✓");
     console.log(`   - Vault cerrado formalmente vía close_vault (Reembolso renta: ${closeRes.refundedRent / 1e9} SOL): ✓`);
     console.log("   - PDA marcada como cerrada con balance 0: ✓");
+    console.log("   - Sincronización canónica de timelock (Engine Tier 4 <-> On-Chain Deadline): ✓");
+    console.log("   - Re-sharding y rotación de custodia Shamir (Gen 1 -> Gen 2) verificado: ✓");
     console.log("   --> [PASS] Invariante de rotación de claves y ciclo de vida de cierre verificado.\n");
     passed++;
   } else {

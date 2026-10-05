@@ -249,10 +249,57 @@ export class DeadMansSwitchEngine {
   setupThresholdVault(masterSecret, { n = 3, k = 2 } = {}) {
     const shares = splitSecret(masterSecret, n, k);
     this.state.custodiedShare = shares[1]; // Agent holds Shard 2
+    this.state.vaultGeneration = 1;
     return {
+      generation: 1,
       beneficiaryShare: shares[0], // Shard 1
       custodianShare: shares[1],   // Shard 2 (retained)
       guardianShare: shares[2]     // Shard 3
+    };
+  }
+
+  /**
+   * PROACTIVE RESILIENCE: ROTATION & RE-SHARDING OF THRESHOLD CUSTODY
+   * Allows the living owner to rotate guardians or refresh cryptographic shares
+   * without exposing the raw secret to third parties. Either regenerates from provided
+   * masterSecret, or reconstructs via quorum (k shares) and redistributes fresh polynomials.
+   *
+   * @param {object} params
+   * @param {string} [params.masterSecret] - Direct secret from owner if rotating voluntarily
+   * @param {Array} [params.recoveryShares] - Quorum of k shares to reconstruct if secret is absent
+   * @param {string[]} [params.newGuardianEmails] - Updated list of guardian addresses
+   * @returns {{ success: boolean, generation: number, beneficiaryShare: any, custodianShare: any, guardianShare: any }}
+   */
+  rotateThresholdVault({ masterSecret, recoveryShares, newGuardianEmails } = {}) {
+    if (this.state.status === "TRIGGERED") {
+      throw new Error("CannotRotateTriggeredVault: Switch is already triggered");
+    }
+
+    let secret = masterSecret;
+    if (!secret && recoveryShares && recoveryShares.length >= 2) {
+      secret = this.reconstructVaultSecret(recoveryShares);
+    }
+
+    if (!secret || typeof secret !== "string" || secret.trim().length === 0) {
+      throw new Error("InvalidSecretOrShares: A master secret or at least 2 valid shares are required for re-sharding");
+    }
+
+    if (newGuardianEmails && Array.isArray(newGuardianEmails)) {
+      this.guardianEmails = newGuardianEmails.map(e => (e || "").trim().toLowerCase());
+      this.state.guardianEmails = this.guardianEmails;
+    }
+
+    // Split using fresh random polynomial in GF(2^8)
+    const freshShares = splitSecret(secret, 3, 2);
+    this.state.custodiedShare = freshShares[1];
+    this.state.vaultGeneration = (this.state.vaultGeneration || 1) + 1;
+
+    return {
+      success: true,
+      generation: this.state.vaultGeneration,
+      beneficiaryShare: freshShares[0],
+      custodianShare: freshShares[1],
+      guardianShare: freshShares[2]
     };
   }
 
@@ -429,6 +476,27 @@ export class DeadMansSwitchEngine {
       return { tier: 1, label: "SOFT_REMINDER", action: "SEND_SOFT_PING", days };
     }
     return { tier: 0, label: "ARMED_HEALTHY", action: "STANDBY", days };
+  }
+
+  /**
+   * CANONICAL TIMELOCK SYNCHRONIZATION:
+   * Calculates exactly aligned on-chain parameters (heartbeat_interval_seconds & grace_period_seconds)
+   * matching the off-chain engine's tiered countdown so on-chain timelock expires precisely at Tier 4.
+   *
+   * @returns {{ heartbeatIntervalSeconds: number, gracePeriodSeconds: number, totalSeconds: number, totalDays: number }}
+   */
+  deriveOnChainTimelockParams() {
+    const cfg = this.state.tieredConfig;
+    const baseDays = this.state.heartbeatIntervalDays ?? cfg.tier1SoftPingDays ?? 30;
+    const totalDays = cfg.tier4TriggerDays ?? 60;
+    const graceDays = Math.max(1, totalDays - baseDays);
+
+    return {
+      heartbeatIntervalSeconds: Math.floor(baseDays * 86400),
+      gracePeriodSeconds: Math.floor(graceDays * 86400),
+      totalSeconds: Math.floor(totalDays * 86400),
+      totalDays
+    };
   }
 }
 

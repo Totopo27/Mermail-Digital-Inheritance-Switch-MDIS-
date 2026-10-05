@@ -120,9 +120,10 @@ export class SolanaDeadmanVaultSimulator {
     return { valid: true, realPrice, confBps };
   }
 
-  updateConfig(callerPubkey, { guardian, heartbeatInterval }) {
+  updateConfig(callerPubkey, { beneficiary, guardian, heartbeatInterval }) {
     if (!this.owner.equals(callerPubkey)) throw new Error("UnauthorizedCaller");
     if (this.status === "Triggered") throw new Error("VaultAlreadyTriggered");
+    if (beneficiary) this.beneficiary = beneficiary;
     if (guardian) this.guardian = guardian;
     if (heartbeatInterval) this.heartbeatIntervalSeconds = heartbeatInterval;
     return true;

@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 use anchor_lang::system_program;
-use anchor_spl::token::{self, Mint, Token, TokenAccount, TransferChecked};
+use anchor_spl::token_interface::{self, Mint, TokenAccount, TokenInterface, TransferChecked};
 use pyth_sdk_solana::load_price_feed_from_account_info;
 
 use solana_security_txt::security_txt;
@@ -68,9 +68,10 @@ pub mod mermail_deadman_vault {
         Ok(())
     }
 
-    /// Living owner updates vault parameters (guardian, oracle attestation, price feed, or intervals).
+    /// Living owner updates vault parameters (beneficiary, guardian, oracle attestation, price feed, or intervals).
     pub fn update_vault_config(
         ctx: Context<UpdateVaultConfig>,
+        new_beneficiary: Option<Pubkey>,
         new_heartbeat_interval_seconds: Option<i64>,
         new_grace_period_seconds: Option<i64>,
         new_guardian: Option<Option<Pubkey>>,
@@ -79,6 +80,10 @@ pub mod mermail_deadman_vault {
     ) -> Result<()> {
         let vault = &mut ctx.accounts.vault_account;
         require!(vault.status == VaultStatus::Active, DeadmanError::VaultNotActive);
+
+        if let Some(beneficiary) = new_beneficiary {
+            vault.beneficiary = beneficiary;
+        }
 
         if let Some(interval) = new_heartbeat_interval_seconds {
             require!(interval > 0, DeadmanError::InvalidInterval);
@@ -202,7 +207,7 @@ pub mod mermail_deadman_vault {
             authority: ctx.accounts.owner.to_account_info(),
         };
         let cpi_program = ctx.accounts.token_program.to_account_info();
-        token::transfer_checked(
+        token_interface::transfer_checked(
             CpiContext::new(cpi_program, cpi_accounts),
             amount,
             ctx.accounts.mint.decimals,
@@ -244,7 +249,7 @@ pub mod mermail_deadman_vault {
             authority: ctx.accounts.vault_account.to_account_info(),
         };
         let cpi_program = ctx.accounts.token_program.to_account_info();
-        token::transfer_checked(
+        token_interface::transfer_checked(
             CpiContext::new_with_signer(cpi_program, cpi_accounts, signer_seeds),
             amount,
             ctx.accounts.mint.decimals,
@@ -442,7 +447,7 @@ pub mod mermail_deadman_vault {
             authority: ctx.accounts.vault_account.to_account_info(),
         };
         let cpi_program = ctx.accounts.token_program.to_account_info();
-        token::transfer_checked(
+        token_interface::transfer_checked(
             CpiContext::new_with_signer(cpi_program, cpi_accounts, signer_seeds),
             token_balance,
             ctx.accounts.mint.decimals,
@@ -457,10 +462,10 @@ pub mod mermail_deadman_vault {
         let vault = &ctx.accounts.vault_account;
         require!(vault.status == VaultStatus::Triggered, DeadmanError::VaultNotTriggered);
 
-        // LOW-01: Ensure no orphan SPL tokens remain in any provided vault token accounts
+        // LOW-01: Ensure no orphan SPL / Token-2022 tokens remain in any provided vault token accounts
         for acc in ctx.remaining_accounts.iter() {
-            if *acc.owner == anchor_spl::token::ID {
-                let token_acc = anchor_spl::token::TokenAccount::try_deserialize(&mut &acc.data.borrow()[..])
+            if *acc.owner == anchor_spl::token::ID || *acc.owner == anchor_spl::token_2022::ID {
+                let token_acc = anchor_spl::token_interface::TokenAccount::try_deserialize(&mut &acc.data.borrow()[..])
                     .map_err(|_| DeadmanError::InvalidTokenAccountOwner)?;
                 if token_acc.owner == vault.key() {
                     require!(token_acc.amount == 0, DeadmanError::VaultHasUnclaimedTokens);
@@ -565,19 +570,19 @@ pub struct DepositSplTokens<'info> {
         constraint = vault_token_account.owner == vault_account.key() @ DeadmanError::InvalidTokenAccountOwner,
         constraint = vault_token_account.mint == mint.key() @ DeadmanError::MismatchedMint
     )]
-    pub vault_token_account: Account<'info, TokenAccount>,
+    pub vault_token_account: InterfaceAccount<'info, TokenAccount>,
 
     #[account(
         mut,
         constraint = owner_token_account.owner == owner.key() @ DeadmanError::UnauthorizedOwner,
         constraint = owner_token_account.mint == mint.key() @ DeadmanError::MismatchedMint
     )]
-    pub owner_token_account: Account<'info, TokenAccount>,
+    pub owner_token_account: InterfaceAccount<'info, TokenAccount>,
 
-    pub mint: Account<'info, Mint>,
+    pub mint: InterfaceAccount<'info, Mint>,
 
     pub owner: Signer<'info>,
-    pub token_program: Program<'info, Token>,
+    pub token_program: Interface<'info, TokenInterface>,
 }
 
 #[derive(Accounts)]
@@ -595,19 +600,19 @@ pub struct WithdrawSplTokens<'info> {
         constraint = vault_token_account.owner == vault_account.key() @ DeadmanError::InvalidTokenAccountOwner,
         constraint = vault_token_account.mint == mint.key() @ DeadmanError::MismatchedMint
     )]
-    pub vault_token_account: Account<'info, TokenAccount>,
+    pub vault_token_account: InterfaceAccount<'info, TokenAccount>,
 
     #[account(
         mut,
         constraint = owner_token_account.owner == owner.key() @ DeadmanError::UnauthorizedOwner,
         constraint = owner_token_account.mint == mint.key() @ DeadmanError::MismatchedMint
     )]
-    pub owner_token_account: Account<'info, TokenAccount>,
+    pub owner_token_account: InterfaceAccount<'info, TokenAccount>,
 
-    pub mint: Account<'info, Mint>,
+    pub mint: InterfaceAccount<'info, Mint>,
 
     pub owner: Signer<'info>,
-    pub token_program: Program<'info, Token>,
+    pub token_program: Interface<'info, TokenInterface>,
 }
 
 #[derive(Accounts)]
@@ -677,19 +682,19 @@ pub struct ClaimSplInheritance<'info> {
         constraint = vault_token_account.owner == vault_account.key() @ DeadmanError::InvalidTokenAccountOwner,
         constraint = vault_token_account.mint == mint.key() @ DeadmanError::MismatchedMint
     )]
-    pub vault_token_account: Account<'info, TokenAccount>,
+    pub vault_token_account: InterfaceAccount<'info, TokenAccount>,
 
     #[account(
         mut,
         constraint = beneficiary_token_account.owner == beneficiary.key() @ DeadmanError::UnauthorizedBeneficiary,
         constraint = beneficiary_token_account.mint == mint.key() @ DeadmanError::MismatchedMint
     )]
-    pub beneficiary_token_account: Account<'info, TokenAccount>,
+    pub beneficiary_token_account: InterfaceAccount<'info, TokenAccount>,
 
-    pub mint: Account<'info, Mint>,
+    pub mint: InterfaceAccount<'info, Mint>,
 
     pub beneficiary: Signer<'info>,
-    pub token_program: Program<'info, Token>,
+    pub token_program: Interface<'info, TokenInterface>,
 }
 
 #[derive(Accounts)]

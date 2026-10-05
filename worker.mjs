@@ -53,34 +53,58 @@ async function saveState(env, key, data) {
 }
 
 /**
- * Direct lightweight Solana JSON-RPC query for Cloudflare Edge.
- * Requires 0 external npm libraries and runs in <300ms.
+ * Direct resilient Solana JSON-RPC query for Cloudflare Edge.
+ * Supports primary + fallback RPC endpoints and automatic exponential backoff on HTTP 429/5xx.
+ * Requires 0 external npm libraries and runs in <300ms on happy path.
  */
-async function querySolanaOnChainLiveness(rpcUrl, pubkey) {
-  try {
-    const res = await fetch(rpcUrl, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        jsonrpc: "2.0",
-        id: Date.now(),
-        method: "getSignaturesForAddress",
-        params: [pubkey, { limit: 1 }]
-      })
-    });
-    const data = await res.json();
-    if (data && data.result && data.result.length > 0) {
-      const tx = data.result[0];
-      return {
-        hasTx: true,
-        signature: tx.signature,
-        blockTimeMs: tx.blockTime ? tx.blockTime * 1000 : Date.now()
-      };
+async function querySolanaOnChainLiveness(rpcUrl, pubkey, { maxRetries = 2, fallbackRpcUrl = null } = {}) {
+  const endpoints = [rpcUrl, fallbackRpcUrl, "https://api.devnet.solana.com"].filter(Boolean);
+  const uniqueEndpoints = [...new Set(endpoints)];
+
+  for (const endpoint of uniqueEndpoints) {
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        const res = await fetch(endpoint, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            jsonrpc: "2.0",
+            id: Date.now(),
+            method: "getSignaturesForAddress",
+            params: [pubkey, { limit: 1 }]
+          })
+        });
+
+        if (res.status === 429 || res.status >= 500) {
+          if (attempt < maxRetries) {
+            const delayMs = Math.pow(2, attempt) * 200;
+            await new Promise(r => setTimeout(r, delayMs));
+            continue;
+          }
+          break; // Try next endpoint
+        }
+
+        const data = await res.json();
+        if (data && data.result && data.result.length > 0) {
+          const tx = data.result[0];
+          return {
+            hasTx: true,
+            signature: tx.signature,
+            blockTimeMs: tx.blockTime ? tx.blockTime * 1000 : Date.now(),
+            endpoint
+          };
+        }
+        return { hasTx: false, signature: null, blockTimeMs: null, endpoint };
+      } catch (err) {
+        if (attempt < maxRetries) {
+          await new Promise(r => setTimeout(r, 150));
+          continue;
+        }
+      }
     }
-    return { hasTx: false, signature: null, blockTimeMs: null };
-  } catch (err) {
-    return { hasTx: false, error: err.message };
   }
+
+  return { hasTx: false, error: "AllRpcEndpointsExhausted" };
 }
 
 /**
@@ -124,13 +148,14 @@ export default {
 
     const engine = new DeadMansSwitchEngine(stored);
     const rpcUrl = env.SOLANA_RPC_URL || "https://api.devnet.solana.com";
+    const fallbackRpcUrl = env.SOLANA_FALLBACK_RPC_URL || null;
     const mcpUrl = env.MERMAIL_MCP_URL || "https://console.mermail.app/mcp";
 
     console.log(`[CRON]: Waking up. Evaluating switch ${switchId} (Current Status: ${engine.state.status})`);
 
-    // 1. SENSOR PASIVO ON-CHAIN: Consulta Solana RPC directamente
+    // 1. SENSOR PASIVO ON-CHAIN: Consulta Solana RPC directamente con resiliencia y fallback
     if (engine.ownerSolPubkey && engine.state.status !== "TRIGGERED") {
-      const onChain = await querySolanaOnChainLiveness(rpcUrl, engine.ownerSolPubkey);
+      const onChain = await querySolanaOnChainLiveness(rpcUrl, engine.ownerSolPubkey, { fallbackRpcUrl });
       if (onChain.hasTx) {
         const daysSinceTx = (Date.now() - onChain.blockTimeMs) / (1000 * 60 * 60 * 24);
         if (daysSinceTx <= engine.state.heartbeatIntervalDays) {
