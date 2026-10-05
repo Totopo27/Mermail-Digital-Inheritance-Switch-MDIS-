@@ -482,7 +482,7 @@ export class NotaryAgentAdvisor {
     return {
       to: beneficiaryEmail,
       language: "en",
-      subject: `🔑 [ACTION REQUIRED] Secure Digital Legacy Delivery Prepared by ${ownerName}`,
+      subject: `🔑 [ACTION REQUIRED] Secure Digital Legacy Delivery & Emergency Contingency Prepared by ${ownerName}`,
       guidanceText: `ACTION REQUIRED: Your family digital legacy protocol has executed. Access Key Piece B is enclosed below.\n` +
         `Solana Vault: 9DpG5ZiHx25Qd5DJemP4CoA1Q4vtdy2WEAxeV31UNQVx | Network: Devnet\n\n` +
         `Hello,\n\n` +
