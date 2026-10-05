@@ -14,7 +14,6 @@
     "test:telegram": "node test-telegram-notifier.mjs",
     "test:redteam": "node test-adversarial-redteam.mjs",
     "test:boundary": "node test-boundary-and-live-exploits.mjs",
-    "bot": "node telegram-bot-service.mjs",
     "init:vault": "node init-live-vault-devnet.mjs",
     "build:contract": "cmd /c build-contract.bat",
     "build:contract:docker": "docker compose run --rm anchor-builder",

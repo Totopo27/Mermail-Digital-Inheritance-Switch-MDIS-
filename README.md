@@ -52,7 +52,6 @@ Deployed on Solana Devnet:
 ├── deadman-engine.mjs              Deterministic contingency state machine
 ├── shamir.mjs                      Shamir secret sharing engine in GF(2^8)
 ├── telegram-notifier.mjs           Sanitized message formatting and TWA auth
-├── telegram-bot-service.mjs        Long-polling Telegram command listener
 ├── interactive-setup.mjs           CLI setup and live contingency simulator
 ├── worker.mjs                      Serverless runtime for Cloudflare Workers
 ├── run-all-tests.mjs               Sequential runner for all 9 validation suites
@@ -118,11 +117,6 @@ node test-deadman-orchestrator.mjs 4   # Full automated sequence
 ### 2. Interactive CLI Onboarding Wizard
 ```bash
 npm run demo
-```
-
-### 3. Continuous Telegram Bot Service
-```bash
-npm run bot
 ```
 
 ### Test Suite Execution
