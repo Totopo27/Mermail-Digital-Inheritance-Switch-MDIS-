@@ -1,0 +1,96 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "MDIS Contingency & Sovereign Threshold Protocol",
+    "animation": "trace",
+    "visual_preset": "signal-flow",
+    "quality_profile": "showcase",
+    "views": [
+      {
+        "id": "flow-standard",
+        "label": "Flow A: Automated Release (Mermail AI)",
+        "focus": ["vault_seed", "shard_custodian", "shard_beneficiary", "reconstruct_engine", "solana_vault"],
+        "note": "Standard path: Shard #2 delivered via Mermail MCP + Shard #1 held offline by Heir."
+      },
+      {
+        "id": "flow-sovereign",
+        "label": "Flow B: Sovereign Fallback (Zero Lock-in)",
+        "focus": ["vault_seed", "shard_guardian", "shard_beneficiary", "reconstruct_engine", "solana_vault"],
+        "note": "Sovereign path: Heir Shard #1 + Guardian Shard #3 combine locally if Mermail is offline."
+      },
+      {
+        "id": "liveness-view",
+        "label": "Passive On-Chain Monitoring",
+        "focus": ["owner_wallet", "solana_rpc", "timer_reset", "grace_warning"],
+        "note": "Solana RPC query auto-refreshes 30-day countdown upon outgoing transaction."
+      }
+    ]
+  },
+  "lanes": [
+    { "id": "liveness_lane", "label": "Passive Monitoring (Solana RPC)" },
+    { "id": "vault_lane", "label": "Shamir GF(2^8) Custody" },
+    { "id": "guardian_lane", "label": "Fiduciary & Fallback Channel", "variant": "exception" },
+    { "id": "settlement_lane", "label": "On-Chain Settlement (Anchor)" }
+  ],
+  "phases": [
+    { "id": "phase_monitor", "label": "1. Passive Vigilance", "fromCol": 0, "toCol": 1 },
+    { "id": "phase_threshold", "label": "2. Threshold Custody (2-of-3)", "fromCol": 2, "toCol": 3, "variant": "emphasis" },
+    { "id": "phase_settle", "label": "3. Vault Execution", "fromCol": 4, "toCol": 5, "variant": "dashed" }
+  ],
+  "groups": [
+    { "id": "grp_liveness", "label": "Activity Sensor", "lane": "liveness_lane", "fromCol": 0, "toCol": 1, "variant": "emphasis" },
+    { "id": "grp_shards", "label": "Fractional Shares", "lane": "vault_lane", "fromCol": 1, "toCol": 3, "variant": "security" },
+    { "id": "grp_settle", "label": "Contract Execution", "lane": "settlement_lane", "fromCol": 4, "toCol": 5, "variant": "dashed" }
+  ],
+  "mainPath": ["vault_seed", "shard_custodian", "shard_beneficiary", "reconstruct_engine", "solana_vault"],
+  "nodes": [
+    { "id": "owner_wallet", "lane": "liveness_lane", "col": 0, "type": "frontend", "label": "Principal Wallet", "sublabel": "Solana on-chain activity", "width": 148 },
+    { "id": "solana_rpc", "lane": "liveness_lane", "col": 1, "type": "cloud", "label": "Solana JSON-RPC", "sublabel": "getSignaturesForAddress", "tag": "passive query", "width": 148 },
+    { "id": "timer_reset", "lane": "liveness_lane", "col": 2, "type": "backend", "label": "Timer Auto-Reset", "sublabel": "refreshed to ARMED", "width": 148 },
+    { "id": "grace_warning", "lane": "liveness_lane", "col": 3, "type": "security", "label": "48h Grace Warning", "sublabel": "dispatched if inactive", "width": 148 },
+
+    { "id": "vault_seed", "lane": "vault_lane", "col": 1, "type": "security", "label": "Master Seed / Key", "sublabel": "Shamir GF(2^8) Split", "tag": "zero full custody", "width": 148 },
+    { "id": "shard_custodian", "lane": "vault_lane", "col": 2, "type": "messagebus", "label": "Shard #2 (Mermail)", "sublabel": "Agent MCP custody", "width": 148 },
+    { "id": "shard_beneficiary", "lane": "vault_lane", "col": 3, "type": "backend", "label": "Shard #1 (Cold Heir)", "sublabel": "Held offline by Heir", "width": 148 },
+
+    { "id": "shard_guardian", "lane": "guardian_lane", "col": 1, "type": "external", "label": "Shard #3 (Guardian)", "sublabel": "Legal trustee escrow", "width": 148 },
+    { "id": "guardian_hold", "lane": "guardian_lane", "col": 2, "type": "security", "label": "Guardian Hold", "sublabel": "14-day medical pause", "width": 148 },
+
+    { "id": "reconstruct_engine", "lane": "settlement_lane", "col": 4, "type": "backend", "label": "Lagrange Engine", "sublabel": "combineShares(2 of 3)", "tag": "GF(2^8) math", "width": 148 },
+    { "id": "solana_vault", "lane": "settlement_lane", "col": 5, "type": "database", "label": "Solana Vault PDA", "sublabel": "Anchor contract release", "width": 148 }
+  ],
+  "edges": [
+    { "id": "e_wallet_rpc", "from": "owner_wallet", "to": "solana_rpc", "variant": "default" },
+    { "id": "e_rpc_reset", "from": "solana_rpc", "to": "timer_reset", "label": "confirmed tx", "variant": "emphasis" },
+    { "id": "e_rpc_grace", "from": "solana_rpc", "to": "grace_warning", "label": "30d silence", "variant": "security" },
+
+    { "id": "e_seed_custodian", "from": "vault_seed", "to": "shard_custodian", "label": "Piece 2", "variant": "default" },
+    { "id": "e_seed_guardian", "from": "vault_seed", "to": "shard_guardian", "label": "Piece 3", "variant": "dashed" },
+    { "id": "e_custodian_beneficiary", "from": "shard_custodian", "to": "shard_beneficiary", "label": "MCP delivery", "variant": "emphasis" },
+
+    { "id": "e_beneficiary_engine", "from": "shard_beneficiary", "to": "reconstruct_engine", "label": "Shares 1+2", "variant": "emphasis" },
+    { "id": "e_guardian_engine", "from": "shard_guardian", "to": "reconstruct_engine", "label": "Shares 1+3 (Sovereign)", "variant": "dashed" },
+    { "id": "e_guardian_hold", "from": "shard_guardian", "to": "guardian_hold", "label": "veto / pause", "variant": "security" },
+
+    { "id": "e_engine_vault", "from": "reconstruct_engine", "to": "solana_vault", "label": "unlock vault", "variant": "emphasis" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Dual Protocol Architecture",
+      "items": [
+        "Flow A (Standard): Automated release via Mermail MCP Notary Agent",
+        "Flow B (Sovereign): 100% offline recovery with Legal Guardian (Zero Lock-in)"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "On-Chain Security Invariants",
+      "items": [
+        "Anchor smart contract custody on Solana Devnet with Pyth oracle valuation",
+        "Zero single point of failure: 1 individual shard leaks 0 bits of secret"
+      ]
+    }
+  ]
+}

@@ -73,7 +73,7 @@ MDIS can be run under **two complementary models**:
 ### Model B: Native Mermail Workspace Agent Skill (Plug-and-Play)
 Once submitted to the Mermail ecosystem, the package inside `skills/mermail-deadman-switch/` enables:
 * 1-Click installation into any Mermail AI Agent workspace via the standard `SKILL.md` manifest.
-* Inbound Natural Language Setup: Owners configure their vault by sending an email (e.g., *"Set up vault for my son son@mermail.app with lawyer lawyer@law.com"*), parsed automatically by Gemini 3.8 Flash without touching a `.env` file.
+* Inbound Natural Language Setup: Owners configure their vault by sending an email (e.g., *"Set up vault for my son son@mermail.app with lawyer lawyer@law.com"*), parsed automatically by the Notary LLM without touching a `.env` file.
 
 ---
 
@@ -95,7 +95,7 @@ Copy `.env.example` to `.env`:
 ```bash
 cp .env.example .env
 ```
-Populate your Mermail API keys and optional LLM keys (Gemini 3.8 Flash is configured by default with multi-provider fallback to OpenAI, Claude, or zero-latency local heuristics).
+Populate your Mermail API keys and optional LLM keys (Structured LLM is configured with multi-provider fallback to OpenAI, Claude, or zero-latency local heuristics).
 
 ---
 
@@ -109,7 +109,7 @@ npm start
 
 # Direct scene execution (Zero-friction for screen recording):
 node test-deadman-orchestrator.mjs 1   # Scene 1: Passive On-chain Liveness & 48h Grace Warning
-node test-deadman-orchestrator.mjs 2   # Scene 2: System 1 Gemini 3.8 Flash vs Prompt Injections
+node test-deadman-orchestrator.mjs 2   # Scene 2: System 1 Notary LLM vs Prompt Injections
 node test-deadman-orchestrator.mjs 3   # Scene 3: Confirmed Death, Shamir GF(2^8) & Heir/Guardian Push
 node test-deadman-orchestrator.mjs 4   # Full automated sequence
 ```

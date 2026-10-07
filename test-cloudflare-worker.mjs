@@ -35,7 +35,7 @@ const env = {
 async function testWorkerFlow() {
   console.log("===============================================================");
   console.log("⚡ TEST CLOUDFLARE WORKER: SERVERLESS CRON & WEBHOOK APIS ⚡");
-  console.log("Simulación de Cloudflare Edge con Solana Devnet y Mermail MCP");
+  console.log("Cloudflare Edge Runtime Simulation with Solana Devnet & Mermail MCP");
   console.log("===============================================================\n");
 
   let passed = 0;
@@ -194,7 +194,7 @@ async function testWorkerFlow() {
   // RESUMEN
   // -------------------------------------------------------------------
   console.log("===============================================================");
-  console.log(`🏆 RESUMEN CLOUDFLARE WORKER: ${passed}/${total} PRUEBAS PASADAS (100%)`);
+  console.log(`🏆 CLOUDFLARE WORKER SUMMARY: ${passed}/${total} TESTS PASSED (100%)`);
   console.log("===============================================================");
 
   if (passed !== total) {

@@ -1,4 +1,4 @@
-// Script Maestro: Ejecución Completa de Pruebas (66/66)
+// Master Test Suite Runner: Full Infrastructure & Smart Contract Verification
 import { execSync } from "child_process";
 
 const suites = [
@@ -14,25 +14,25 @@ const suites = [
 ];
 
 console.log("===============================================================");
-console.log("🚀 EJECUTANDO LA SUITE COMPLETA DE PRUEBAS DE INFRAESTRUCTURA 🚀");
+console.log("🚀 EXECUTING FULL INFRASTRUCTURE & SECURITY TEST SUITE 🚀");
 console.log("===============================================================\n");
 
 let passedSuites = 0;
 
 for (const suite of suites) {
   console.log(`\n▶️  [SUITE]: ${suite.name}`);
-  console.log(`    Comando: ${suite.cmd}`);
+  console.log(`    Command: ${suite.cmd}`);
   console.log("---------------------------------------------------------------");
   try {
     execSync(suite.cmd, { stdio: "inherit" });
     passedSuites++;
-    console.log(`✅  [SUITE SUPERADA]: ${suite.name}\n`);
+    console.log(`✅  [SUITE PASSED]: ${suite.name}\n`);
   } catch (err) {
-    console.error(`❌  [SUITE FALLIDA]: ${suite.name}`);
+    console.error(`❌  [SUITE FAILED]: ${suite.name}`);
     process.exit(1);
   }
 }
 
 console.log("===============================================================");
-console.log(`🏆 RESUMEN FINAL: ${passedSuites}/${suites.length} SUITES SUPERADAS CON ÉXITO (100% PASS RATE)`);
+console.log(`🏆 FINAL SUMMARY: ${passedSuites}/${suites.length} SUITES VERIFIED (100% PASS RATE)`);
 console.log("===============================================================");

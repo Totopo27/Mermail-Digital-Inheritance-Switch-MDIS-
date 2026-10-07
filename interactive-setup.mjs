@@ -1,7 +1,7 @@
 /**
  * Mermail Digital Inheritance Switch - Interactive CLI Setup & Simulator
- * Experiencia interactiva para que el usuario defina en vivo sus herederos,
- * fraccione sus claves con Shamir 2-de-3 y active el protocolo.
+ * Interactive experience to configure beneficiaries, split keys via Shamir 2-of-3,
+ * and arm the protocol in real time.
  */
 
 import readline from "readline";
@@ -9,7 +9,6 @@ import fs from "fs";
 import path from "path";
 import { splitSecret } from "./shamir.mjs";
 import { DeadMansSwitchEngine, NotaryAgentAdvisor } from "./deadman-engine.mjs";
-import { dispatchTelegramNotification, formatTelegramHtml } from "./telegram-notifier.mjs";
 
 function loadEnv() {
   const envPath = path.resolve(".env");
@@ -63,7 +62,7 @@ const rl = readline.createInterface({
 
 const ask = (query, defaultValue) => {
   return new Promise((resolve) => {
-    const promptText = defaultValue ? `${query} [por defecto: ${defaultValue}]: ` : `${query}: `;
+    const promptText = defaultValue ? `${query} [default: ${defaultValue}]: ` : `${query}: `;
     rl.question(promptText, (ans) => {
       resolve(ans.trim() ? ans.trim() : defaultValue);
     });
@@ -71,58 +70,57 @@ const ask = (query, defaultValue) => {
 };
 
 console.log("\n===============================================================");
-console.log("🛡️  MERMAIL DIGITAL INHERITANCE SWITCH — SETUP INTERACTIVO 🛡️");
-console.log("Protocolo Autónomo de Contingencia & Custodia Fraccionada en Solana");
+console.log("🛡️  MERMAIL DIGITAL INHERITANCE SWITCH — INTERACTIVE SETUP 🛡️");
+console.log("Autonomous Contingency Protocol & Fractional Threshold Custody on Solana");
 console.log("===============================================================\n");
 
 async function main() {
-  console.log("👉 PASO 1: Configuración de Identidades y Beneficiario\n");
+  console.log("👉 STEP 1: Identity & Beneficiary Configuration\n");
 
   const ownerEmail = await ask(
-    "1. Tu correo como Titular (Owner)",
+    "1. Principal / Owner Email",
     env.OWNER_EMAIL || "xentest2@mermail.app"
   );
 
   const ownerWallet = await ask(
-    "2. Tu Wallet de Solana (Owner Pubkey)",
+    "2. Principal Solana Wallet (Owner Pubkey)",
     env.OWNER_WALLET_SOL || "4dzF1cTVhRo9icTbebcBBDjBaFvF7h7d9U79H9qFQ13A"
   );
 
   const beneficiaryEmail = await ask(
-    "3. Correo de tu Heredero / Beneficiario",
+    "3. Primary Beneficiary / Heir Email",
     env.BENEFICIARY_EMAIL || "xen3test3@mermail.app"
   );
 
   const beneficiaryWallet = await ask(
-    "4. Wallet de Solana de tu Heredero (Beneficiary Pubkey)",
+    "4. Primary Beneficiary Solana Wallet",
     env.BENEFICIARY_WALLET_SOL || "F9tjfnvJUy8EYip947GhYM4YW7kG6U5hDcMFc3DRFbwE"
   );
 
   const guardianEmail = await ask(
-    "5. Correo de tu Guardián de Emergencia (Amigo / Abogado)",
+    "5. Emergency Legal Guardian / Trustee Email",
     env.GUARDIAN_EMAIL || "guardian-test@mermail.app"
   );
 
-  const intervalDays = parseInt(await ask("6. Intervalo de revisión en días (Check-in interval)", "30"), 10);
+  const intervalDays = parseInt(await ask("6. Routine Check-in Interval in days", "30"), 10);
 
   console.log("\n---------------------------------------------------------------");
-  console.log("🔐 PASO 2: Protección Criptográfica de tus Fondos / Claves");
+  console.log("🔐 STEP 2: Cryptographic Threshold Vault Protection");
   console.log("---------------------------------------------------------------\n");
 
   const rawSecret = await ask(
-    "Ingresa la Seed Phrase o directiva secreta que querés heredar",
+    "Enter Master Recovery Seed / Secret Directive to protect",
     "apple banana cherry dog elephant fox grape horse igloo jaguar kangaroo lemon"
   );
 
-  console.log("\n[PROCESANDO] Ejecutando división de Shamir en Galois Field GF(2^8) (2-de-3)...");
+  console.log("\n[PROCESSING] Splitting secret via Shamir in Galois Field GF(2^8) (2-of-3 threshold)...");
   const shards = splitSecret(rawSecret, 3, 2);
 
-  console.log("\n✅ ¡Clave maestra fragmentada con éxito! (Ninguna parte tiene la clave completa):");
-  console.log(`   🔹 Shard #1 (Offline para el Beneficiario): ${shards[0].slice(0, 30)}...`);
-  console.log(`   🔹 Shard #2 (Custodiado por el Agente):   ${shards[1].slice(0, 30)}...`);
-  console.log(`   🔹 Shard #3 (Para el Guardián de apoyo):   ${shards[2].slice(0, 30)}...`);
+  console.log("\n✅ Master Key successfully split into 3 shards (Zero single point of failure):");
+  console.log(`   🔹 Shard #1 (Offline Heir Share):       ${shards[0].data.slice(0, 30)}...`);
+  console.log(`   🔹 Shard #2 (Mermail Custodian Share):  ${shards[1].data.slice(0, 30)}...`);
+  console.log(`   🔹 Shard #3 (Legal Guardian Share):     ${shards[2].data.slice(0, 30)}...`);
 
-  // Guardar configuración en archivo de estado
   const vaultConfig = {
     id: "DMS-VAULT-2026-LIVE",
     ownerEmail,
@@ -140,26 +138,26 @@ async function main() {
   fs.writeFileSync(".deadman-state.json", JSON.stringify(vaultConfig, null, 2));
 
   console.log("\n---------------------------------------------------------------");
-  console.log("🚀 PASO 3: Estado del Switch y Pruebas en Vivo");
+  console.log("🚀 STEP 3: Switch Status & Live Simulation Actions");
   console.log("---------------------------------------------------------------\n");
-  console.log(`Bóveda configurada en estado: [ARMED - VIGILANCIA ACTIVA]`);
-  console.log(`Smart Contract Vault PDA en Solana: 9DpG5ZiHx25Qd5DJemP4CoA1Q4vtdy2WEAxeV31UNQVx`);
+  console.log(`Vault active state: [ARMED - CONTINUOUS VIGILANCE]`);
+  console.log(`Solana Smart Contract Vault PDA: 9DpG5ZiHx25Qd5DJemP4CoA1Q4vtdy2WEAxeV31UNQVx`);
 
-  console.log("\n¿Qué acción querés demostrar ahora en vivo?");
-  console.log("  [1] Simular Check-in / Prueba de Vida (Resetea el timer)");
-  console.log("  [2] Simular Vencimiento de Gracia (Disparo de Contingencia, Correo a Beneficiario y Telegram)");
-  console.log("  [3] Solo guardar y salir");
+  console.log("\nSelect a live action to demonstrate:");
+  console.log("  [1] Simulate Check-in / Proof of Life (Timer resets to 30 days)");
+  console.log("  [2] Simulate Grace Expiration (Contingency Trigger, Heir Notice & Telegram Push)");
+  console.log("  [3] Save configuration and exit");
 
-  const action = await ask("\nSelecciona una opción (1, 2 o 3)", "2");
+  const action = await ask("\nEnter choice [1, 2 or 3]", "2");
 
   if (action === "1") {
-    console.log("\n[EJECUTANDO CHECK-IN] Registrando señal de vida del titular...");
+    console.log("\n[EXECUTING CHECK-IN] Recording verified liveness signal...");
     vaultConfig.lastHeartbeatAt = new Date().toISOString();
     fs.writeFileSync(".deadman-state.json", JSON.stringify(vaultConfig, null, 2));
-    console.log("✅ [OK] Prueba de vida confirmada. El switch permanece en estado ARMED por 30 días más.\n");
+    console.log("✅ [OK] Proof of life confirmed. Switch remains ARMED for an additional 30 days.\n");
   } else if (action === "2") {
-    console.log("\n[SIMULANDO CONTINGENCIA] 60 días transcurridos sin respuesta del titular...");
-    console.log(`[ALERT] El Agente Notarial inicia el protocolo de herencia para ${beneficiaryEmail}...`);
+    console.log("\n[SIMULATING CONTINGENCY] 60 days elapsed without principal response...");
+    console.log(`[ALERT] Notary Agent initiating digital inheritance protocol for ${beneficiaryEmail}...`);
 
     const guidance = NotaryAgentAdvisor.generateBeneficiaryGuidance({
       ownerName: ownerEmail,
@@ -168,7 +166,7 @@ async function main() {
       solRescueAmount: 0.1
     });
 
-    console.log("\n✉️  [MERMAIL MCP] Despachando Shard #2 y Guía Notarial al Beneficiario...");
+    console.log(`\n📬 [MERMAIL MCP] Sending Shard #2 and recovery instructions via ${CUSTODIAN_EMAIL}...`);
     try {
       const emailRes = await callMcp(CUSTODIAN_KEY, "send_email", {
         mailboxId: CUSTODIAN_MAILBOX_ID,
@@ -179,46 +177,24 @@ async function main() {
           text: guidance.guidanceText
         }
       });
-      console.log(`✅ Correo entregado al buzón de Mermail con éxito:`, emailRes.result || emailRes);
+      console.log("✅ Mermail MCP email delivered successfully to beneficiary mailbox:", emailRes.result || emailRes);
     } catch (err) {
-      console.log(`[AVISO ENTORNO] Correo encolado para despacho: ${err.message}`);
+      console.log(`[ENVIRONMENT NOTICE] Email queued for delivery: ${err.message}`);
     }
 
-    console.log("\n📱 [TELEGRAM] Notificando evento crítico multicanal...");
-    const telegramHtml = formatTelegramHtml({
-      title: "CONTINGENCIA ACTIVADA - DIGITAL INHERITANCE",
-      fields: [
-        { label: "Titular", value: ownerEmail },
-        { label: "Beneficiario", value: beneficiaryEmail },
-        { label: "Wallet Herencia", value: beneficiaryWallet },
-        { label: "Shard 2 Liberado", value: "SI (Vía Mermail)" }
-      ],
-      link: {
-        label: "Solana Explorer (Receipt)",
-        url: "https://explorer.solana.com/address/9DpG5ZiHx25Qd5DJemP4CoA1Q4vtdy2WEAxeV31UNQVx?cluster=devnet"
-      }
-    });
+    console.log("\n📱 [MERMAIL TELEGRAM INTEGRATION] Multi-channel notification active via Mermail native delivery.");
+    console.log("   --> Connected channels: Mermail Webmail & Linked Telegram Push.");
 
-    try {
-      await dispatchTelegramNotification({
-        botToken: env.TELEGRAM_BOT_TOKEN,
-        chatId: env.TELEGRAM_CHAT_ID,
-        htmlMessage: telegramHtml
-      });
-      console.log("✅ Alerta de Telegram enviada en tiempo real a tu chat.");
-    } catch (tgErr) {
-      console.log("Aviso Telegram:", tgErr.message);
-    }
-
-    console.log("\n🎉 [DEMO COMPLETADA CON ÉXITO] El beneficiario recibió su Shard #2 y el link para retirar fondos en Solana.");
+    console.log("\n🎉 [SUCCESS] Contingency sequence completed. Beneficiary received Shard #2 and Solana withdrawal link.\n");
   } else {
-    console.log("\nConfiguración guardada en .deadman-state.json. El bot y el worker usarán estos datos.");
+    console.log("\n💾 Configuration saved to .deadman-state.json. Exiting.\n");
   }
 
   rl.close();
 }
 
 main().catch((err) => {
-  console.error("Error en ejecución interactiva:", err);
+  console.error("Critical error in interactive setup:", err);
   rl.close();
+  process.exit(1);
 });

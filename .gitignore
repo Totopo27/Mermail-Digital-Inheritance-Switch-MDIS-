@@ -10,3 +10,6 @@ target/
 .cargo_cache/
 deployer-keypair.json
 .deadman-state.json
+docs/local-*
+local-*
+
